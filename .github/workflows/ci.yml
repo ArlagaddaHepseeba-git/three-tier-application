@@ -82,3 +82,27 @@ jobs:
 
       - name: Validate manifests against Kubernetes schemas
         run: kubeconform -strict -summary k8s/
+
+  terraform:
+    name: Terraform - validate code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
+
+      - name: Check formatting
+        run: terraform fmt -check -recursive
+        working-directory: terraform
+
+      - name: Initialize
+        run: terraform init
+        working-directory: terraform
+
+      - name: Validate
+        run: terraform validate
+        working-directory: terraform
