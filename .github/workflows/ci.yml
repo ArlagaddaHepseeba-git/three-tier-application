@@ -106,3 +106,23 @@ jobs:
       - name: Validate
         run: terraform validate
         working-directory: terraform
+
+  monitoring:
+    name: Monitoring - validate configs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install promtool
+        run: |
+          wget -q https://github.com/prometheus/prometheus/releases/download/v2.53.0/prometheus-2.53.0.linux-amd64.tar.gz
+          tar xzf prometheus-2.53.0.linux-amd64.tar.gz
+
+      - name: Validate Prometheus config
+        run: |
+          ./prometheus-2.53.0.linux-amd64/promtool check config monitoring/prometheus.yml
+
+      - name: Validate Grafana dashboard JSON
+        run: |
+          python3 -c "import glob, json; [json.load(open(f)) for f in glob.glob('monitoring/grafana/dashboards/*.json')]; print('All dashboards are valid JSON')"
