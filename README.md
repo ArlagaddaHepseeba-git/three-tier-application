@@ -1,16 +1,15 @@
 # DevOps Practice Project
 
-A simple three-tier application (React + Spring Boot + MySQL) that you can build, run, and
-push to GitHub — then practice DevOps with it in as many ways as you want
-(Docker, Kubernetes, CI/CD, Terraform, monitoring, etc.).
+A simple **To-Do list app** (React + Spring Boot + MySQL) designed for practicing
+**DevOps** — the job of automating how software is built, tested, and deployed.
 
-## Architecture
+Think of it like a restaurant split into 3 parts:
 
-| Tier     | Technology                 | Folder       | Port |
-|----------|----------------------------|--------------|------|
-| Frontend | React 18 (create-react-app)| `frontend/`  | 3000 |
-| Backend  | Java 17 + Spring Boot 3    | `backend/`   | 8080 |
-| Database | MySQL 8                    | `database/`  | 3306 |
+| Part | What it does | Technology | Port |
+|------|--------------|------------|------|
+| **Frontend** | The waiter — what you see | React | 3000 |
+| **Backend** | The kitchen — the logic | Spring Boot (Java) | 8080 |
+| **Database** | The fridge — where data is stored | MySQL | 3306 |
 
 ```
 Browser
@@ -18,219 +17,195 @@ Browser
    ▼
 [Frontend]  React  —  http://localhost:3000
    │
-   │  REST API (axios)
+   │  REST API (axios / HTTP)
    ▼
 [Backend]   Spring Boot  —  http://localhost:8080/api
    │
-   │  JPA / JDBC
+   │  JPA (Java ↔ MySQL adapter)
    ▼
 [Database]  MySQL  —  devops_practice_db
 ```
 
-## Prerequisites
+---
 
-- Java 17+ (LTS)
-- Maven 3.8+
-- Node.js 18+
-- MySQL 8+
+## What the app does
+
+A simple list you can:
+- **See** existing items (starts with 7 sample items)
+- **Add** new items
+- **Delete** items
+- **Check** that the backend is alive ("healthy" / "Unreachable" status)
+
+---
+
+## Screenshots
+
+> Add your screenshots here: save each image into `docs/screenshots/`
+> with the exact filename below, then commit.
+
+![App home page](docs/screenshots/app-home.png)
+*The app running at http://localhost:3000*
+
+![Items API](docs/screenshots/api-items.png)
+*Backend data: http://localhost:8080/api/items*
+
+![Grafana dashboard](docs/screenshots/grafana-dashboard.png)
+*Live monitoring at http://localhost:3001*
+
+![GitHub Actions](docs/screenshots/github-actions.png)
+*CI results — Actions tab on GitHub*
+
+![Database in DBeaver](docs/screenshots/dbeaver-database.png)
+*The database seen in DBeaver*
+
+---
+
+## Run it on your computer
+
+### Step 0 — One-time installs
+
+You need these installed: **Java 17**, **Maven**, **Node.js**, **MySQL**.
+Check them with:
 
 ```bash
-java -version      # must show 17+
+java -version
 mvn -version
 node -v
-npm -v
 mysql --version
 ```
 
-## 1. Set up the database
+### Step 1 — Start the database
 
 ```bash
 mysql -u root -p < database/init.sql
 ```
 
-This creates the `devops_practice_db` database with an `items` table and seed data.
+This one-time command creates the database, tables, and 7 sample items.
 
-If you don't have MySQL installed locally, it's a great first Docker exercise:
-
-```bash
-docker run -d --name mysql \
-  -p 3306:3306 \
-  -e MYSQL_ROOT_PASSWORD=root \
-  -e MYSQL_DATABASE=devops_practice_db \
-  mysql:8
-```
-
-## 2. Run the backend (Spring Boot - WAR)
+### Step 2 — Start the backend (Terminal 1)
 
 ```bash
 cd backend
 mvn clean package
-mvn spring-boot:run     # option A: run directly (works even with WAR packaging)
+mvn spring-boot:run
 ```
 
-**Option B — deploy the WAR to an external Tomcat:**
-```bash
-cp target/backend-1.0.0.war "C:\Program Files\Apache Software Foundation\Tomcat 10\webapps\"
-cd "C:\Program Files\Apache Software Foundation\Tomcat 10\bin" && catalina.bat run
-```
+Wait until you see `Tomcat started on ports 8443 (https), 8080 (http)`.
 
-The WAR doesn't bundle Tomcat (scope `provided`), so `java -jar target/backend-1.0.0.war`
-is intentionally NOT supported when deploying manually.
-
-**The API now runs on BOTH:**
-
-| Protocol | URL                  | Description       |
-|----------|----------------------|-------------------|
-| HTTPS    | https://localhost:8443/api | Secure backend (mkcert cert) |
-| HTTP     | http://localhost:8080/api  | Plain backend      |
-
-| Method | URL                  | Description       |
-|--------|----------------------|-------------------|
-| GET    | /api/health          | Health check      |
-| GET    | /api/items           | List all items    |
-| POST   | /api/items           | Add an item       |
-| DELETE | /api/items/{id}      | Delete an item    |
-
-Config is controlled by environment variables (see `application.properties`):
-
-| Variable    | Default                              |
-|-------------|--------------------------------------|
-| DB_URL      | jdbc:mysql://localhost:3306/devops_practice_db |
-| DB_USERNAME | root                                 |
-| DB_PASSWORD | root                                 |
-| PORT        | 8443 (HTTPS)                         |
-| HTTP_PORT   | 8080 (HTTP)                          |
-
-### HTTPS (mkcert locally-trusted certs)
-
-The app uses HTTPS with `mkcert` so your browser trusts the cert (no warnings).
-
-```bash
-mkcert -install                              # one-time: install local CA
-cd backend/src/main/resources/ssl
-mkcert -key-file localhost.key -cert-file localhost.pem localhost 127.0.0.1 ::1
-openssl pkcs12 -export \
-  -in localhost.pem -inkey localhost.key \
-  -out localhost.p12 -name devops-practice -passout pass:changeit
-```
-
-Spring Boot loads the keystore from `application.properties`
-(`server.ssl.key-store=classpath:ssl/localhost.p12`, password `changeit`).
-The `ssl/` folder is git-ignored — don't commit private keys.
-
-For the frontend build, point it at the HTTPS backend:
-```bash
-REACT_APP_API_URL=https://localhost:8443/api npm run build
-```
-
-Run tests:
-```bash
-cd backend
-mvn test
-```
-
-## 3. Run the frontend (React)
+### Step 3 — Start the frontend (Terminal 2)
 
 ```bash
 cd frontend
-npm install
+npm install        # only the first time
 npm start
 ```
 
-Open `http://localhost:3000`. It talks to the backend at `https://localhost:8443/api`.
+### Step 4 — Open the app
 
-### Serve the production build on BOTH HTTP + HTTPS
+Open **http://localhost:3000** in your browser.
+
+**Tip:** if the status shows red "Unreachable", the frontend is pointing at the
+HTTPS backend which the browser doesn't trust yet. Easiest fix: start it against
+plain HTTP instead:
 
 ```bash
-cd frontend
-npm run build    # creates build/ folder
-npm run serve    # serves build/ on http://localhost:3000 AND https://localhost:3001
+REACT_APP_API_URL=http://localhost:8080/api npm start
 ```
 
-| Protocol | URL                        |
-|----------|----------------------------|
-| HTTP     | http://localhost:3000      |
-| HTTPS    | https://localhost:3001     |
+---
 
-(Uses the same mkcert certs from `backend/src/main/resources/ssl/`.)
+## Backend API (what the kitchen accepts)
 
-The API URL is configurable (build-time env var):
-```bash
-REACT_APP_API_URL=https://localhost:8443/api npm run build
-```
+| Method | URL                | Action       |
+|--------|--------------------|--------------|
+| GET    | /api/health        | Is it alive? |
+| GET    | /api/items         | List all     |
+| POST   | /api/items         | Add one      |
+| DELETE | /api/items/{id}    | Delete one   |
 
-## 4. Push to GitHub
-
-```bash
-git init
-git add .
-git commit -m "Initial commit: three-tier devops practice app"
-git branch -M main
-git remote add origin https://github.com/<your-username>/<your-repo>.git
-git push -u origin main
-```
-
-## 5. Production deployment (Ubuntu + certbot)
-
-The `deploy/` folder contains everything to deploy this app on an Ubuntu
-server with a real Let's Encrypt certificate via certbot + Nginx TLS
-termination: `deploy/setup-ubuntu.sh`, `deploy/nginx-three-tier.conf`,
-`deploy/README.md`, and a `production` Spring profile
-(`application-production.properties`). See `deploy/README.md` for the full
-guide.
-
-## API examples
+Example:
 
 ```bash
-# Health check
-curl http://localhost:8080/api/health
-
-# List items
 curl http://localhost:8080/api/items
-
-# Add an item
-curl -X POST http://localhost:8080/api/items \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Learn load balancing"}'
-
-# Delete an item
-curl -X DELETE http://localhost:8080/api/items/1
+curl -X POST http://localhost:8080/api/items -H "Content-Type: application/json" -d '{"name":"Learn load balancing"}'
 ```
+
+---
+
+## The full DevOps toolkit (in this repo)
+
+Each tool's config lives in its own folder, and every one is **auto-checked by CI**
+on every push (see the `Actions` tab on GitHub).
+
+| Tool | What it does in plain words | Folder |
+|------|-----------------------------|--------|
+| **GitHub Actions (CI)** | Builds + tests your code automatically on every push | `.github/workflows/ci.yml` |
+| **Docker** | Packages each part (frontend/backend/database) into named boxes that run anywhere | `backend/Dockerfile`, `frontend/Dockerfile`, `docker-compose.yml` |
+| **Kubernetes** | The "air traffic controller" — runs those boxes, keeps copies alive, restarts them if they crash | `k8s/` |
+| **Terraform** | Cloud-as-code — writes the AWS server setup as text files | `terraform/` |
+| **Prometheus + Grafana** | Watches the app live and shows pretty graphs | `monitoring/` |
+
+### Run everything at once with Docker
+
+```bash
+docker compose up
+```
+
+Open **http://localhost:3000**. (Needs Docker Desktop. Stop the local backend + MySQL first — they use the same ports.)
+
+### Run monitoring (Prometheus + Grafana)
+
+```bash
+cd monitoring
+docker compose -f docker-compose.monitoring.yml up
+```
+
+- Prometheus: http://localhost:9090
+- Grafana: **http://localhost:3001** (login not required)
+
+### Deploy to Kubernetes
+
+```bash
+docker build -t three-tier/backend ./backend
+docker build -t three-tier/frontend ./frontend
+kubectl apply -f k8s/
+```
+
+Open **http://localhost:30000**. (Needs Docker + Minikube/kind.)
+
+### Deploy to AWS (free tier)
+
+```bash
+cd terraform
+terraform init
+terraform apply        # type "yes"
+```
+
+Terraform creates a server that automatically installs the app and gives you a public URL.
+
+---
 
 ## Project structure
 
 ```
-├── frontend/                     # React app (npm build)
-│   ├── public/
-│   ├── src/
-│   │   ├── App.js                # UI + API calls
-│   │   └── index.js
-│   └── package.json
-├── backend/                      # Spring Boot app (mvn package)
-│   ├── pom.xml
-│   └── src/main/java/com/devops/practice/app/
-│       ├── DevOpsPracticeApplication.java
-│       ├── config/CorsConfig.java
-│       ├── controller/           # REST controllers
-│       ├── service/              # Business logic
-│       ├── repository/           # Spring Data JPA
-│       └── entity/Item.java
-│   └── src/main/resources/application.properties
-└── database/
-    └── init.sql                  # Tables + seed data
+three-tier-application/
+├── frontend/          # React app (what you see)
+├── backend/           # Spring Boot app (business logic)
+├── database/          # MySQL setup script
+├── deploy/            # Production deployment scripts
+├── k8s/               # Kubernetes manifests
+├── terraform/         # AWS infrastructure-as-code
+├── monitoring/        # Prometheus + Grafana configs
+└── .github/workflows/ # CI/CD pipeline
 ```
 
-## Ideas for DevOps practice
+---
 
-Once your code is on GitHub, try:
+## Troubleshooting
 
-1. **Docker** — write `Dockerfile`s for frontend/backend, then a `docker-compose.yml` for all three tiers
-2. **GitHub Actions** — add a CI workflow that runs `mvn test` + `npm build` on every push
-3. **Kubernetes** — create manifests/configmaps/secrets, deploy with Minikube or kind
-4. **Helm** — package your Kubernetes manifests as Helm charts
-5. **Terraform** — provision the cloud infra (EC2/ECS/RDS) with IaC
-6. **Monitoring** — wire Prometheus + Grafana to the Spring Actuator `/actuator/prometheus`
-7. **CI/CD** — build images on push, scan with Trivy, deploy to ECS/EKS/self-hosted
-8. **Database** — practice migrations, `mysqldump` backups, replication
-
-Happy practicing!
+| Problem | Fix |
+|---------|-----|
+| "Unreachable" / items won't load | Use `REACT_APP_API_URL=http://localhost:8080/api npm start` |
+| Backend won't start | Is MySQL running? Is `database/init.sql` applied? |
+| Port 3000 already in use | Close the other React app, or change port |
+| Docker port conflict (3306/8080) | Stop the local backend + MySQL before `docker compose up` |
