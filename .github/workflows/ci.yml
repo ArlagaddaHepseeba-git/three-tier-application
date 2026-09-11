@@ -54,3 +54,16 @@ jobs:
 
       - name: Build the app
         run: npm run build
+
+  docker:
+    name: Docker - build images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: docker build -t three-tier/backend ./backend
+
+      - name: Build frontend image
+        run: docker build -t three-tier/frontend ./frontend
