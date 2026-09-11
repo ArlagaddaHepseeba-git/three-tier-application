@@ -47,7 +47,7 @@ A simple list you can:
 *The app running at http://localhost:3000*
 
 ![Items API](docs/screenshots/api-items.png)
-*Backend data: http://localhost:8080/api/items*
+*Backend data: http://localhost:8080/api/items* 
 
 ![Grafana dashboard](docs/screenshots/grafana-dashboard.png)
 *Live monitoring at http://localhost:3001*
